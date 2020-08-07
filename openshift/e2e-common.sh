@@ -2,13 +2,13 @@
 set -eu
 
 source $(git rev-parse --show-toplevel)/vendor/github.com/tektoncd/plumbing/scripts/e2e-tests.sh
-source $(git rev-parse --show-toplevel)/resolve-yamls.sh
+source $(git rev-parse --show-toplevel)/openshift/resolve-yamls.sh
 
 function install_pipeline_crd() {
   echo ">> Deploying Tekton Pipelines"
 
-  generate_pipeline_resources /tmp/tekton-pipeline-resolved.yaml $OPENSHIFT_REGISTRY_PREFIX
-
+  generate_pipeline_resources /tmp/tekton-pipeline-resolved.yaml ${OPENSHIFT_REGISTRY_PREFIX} ${OPENSHIFT_REGISTRY_TAG}
+  read
   oc apply -f /tmp/tekton-pipeline-resolved.yaml
 
   verify_pipeline_installation

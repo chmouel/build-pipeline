@@ -3,13 +3,17 @@ TMP=$(mktemp /tmp/.mm.XXXXXX)
 clean() { rm -f ${TMP}; }
 trap clean EXIT
 
+GREP=grep
+type -p ggrep >/dev/null 2>/dev/null && GREP=ggrep
+
+
 # Take all yamls in $dir and generate a all in one yaml file with resolved registry image/tag
 function resolve_resources() {
   local dir=$1
   local resolved_file_name=$2
   local ignores=$3
   local registry_prefix=$4
-  local image_tag=${5}
+  local image_tag=$5
 
   # This would get only one set of truth from the Makefile for the image lists
   #
@@ -19,7 +23,7 @@ function resolve_resources() {
   # to:
   #  % grep '^CORE_IMAGES' Makefile|sed -e 's/.*=//' -e 's,./cmd/,,g'|tr -d '\n'|sed -e 's/ /|/g' -e 's/^/(/' -e 's/$/)\n/'
   # (controller|entrypoint|kubeconfigwriter|nop|webhook|imagedigestexportercreds-init|git-init)
-  local image_regexp=$(grep '^CORE_IMAGES' $(git rev-parse --show-toplevel)/Makefile| \
+  local image_regexp=$(${GREP} '^CORE_IMAGES' $(git rev-parse --show-toplevel)/Makefile| \
                            sed -e 's/.*=//' -e 's,./cmd/,,g'|tr '\n' ' '| \
                            sed -e 's/ /|/g' -e 's/^/(/' -e 's/|$/)\n/')
 
@@ -58,12 +62,12 @@ function resolve_resources() {
              > ${TMP}
     fi
 
-	# Remove runAsUser: id, openshift takes care of randoming them and we dont need a fixed uid for that 
+	# Remove runAsUser: id, openshift takes care of randoming them and we dont need a fixed uid for that
 	sed -i '/runAsUser: [0-9]*/d' ${TMP}
 
     # Adding the labels: openshift.io/cluster-monitoring on Namespace to add the cluster-monitoring
     # See: https://docs.openshift.com/container-platform/4.1/logging/efk-logging-deploying.html
-    grep -qzP "kind: Namespace\nmetadata:\n\ \ name:\ tekton-pipelines" ${TMP} && sed -i '/^\ \ labels:/a \ \ \ \ openshift.io/cluster-monitoring:\ \"true\"' ${TMP}
+    ${GREP} -qzP "kind: Namespace\nmetadata:\n\ \ name:\ tekton-pipelines" ${TMP} && sed -i '/^\ \ labels:/a \ \ \ \ openshift.io/cluster-monitoring:\ \"true\"' ${TMP}
 
     cat ${TMP} >> $resolved_file_name
 
