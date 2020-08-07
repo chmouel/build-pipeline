@@ -156,12 +156,9 @@ function output_pods_logs() {
 function delete_build_pipeline_openshift() {
   echo ">> Bringing down Build"
   # Make sure that are no residual object in the tekton-pipelines namespace.
-  oc delete --ignore-not-found=true taskrun.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
-  oc delete --ignore-not-found=true pipelinerun.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
-  oc delete --ignore-not-found=true task.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
-  oc delete --ignore-not-found=true clustertask.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
-  oc delete --ignore-not-found=true pipeline.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
-  oc delete --ignore-not-found=true pipelineresources.tekton.dev --all -n $TEKTON_PIPELINE_NAMESPACE
+  for res in conditions pipelineresources tasks clustertasks pipelines taskruns pipelineruns; do
+      oc delete --ignore-not-found=true ${res}.tekton.dev --all
+  done
   oc delete --ignore-not-found=true -f tekton-pipeline-resolved.yaml
 }
 

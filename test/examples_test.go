@@ -93,7 +93,7 @@ func SubstituteEnv(input []byte, namespace string) ([]byte, error) {
 // KoCreate wraps the ko binary and invokes `ko create` for input within
 // namespace
 func KoCreate(input []byte, namespace string) ([]byte, error) {
-	cmd := exec.Command("ko", "create", "-n", namespace, "-f", "-")
+	cmd := exec.Command("oc", "create", "-n", namespace, "-f", "-")
 	cmd.Stdin = strings.NewReader(string(input))
 
 	out, err := cmd.CombinedOutput()
@@ -181,7 +181,19 @@ func getExamplePaths(t *testing.T, dir string) []string {
 			return filepath.SkipDir
 		}
 		if info.IsDir() == false && filepath.Ext(info.Name()) == ".yaml" {
+			// Ignore tests from if they match regexp in TEST_EXAMPLES_IGNORES
+			val, ok := os.LookupEnv("TEST_EXAMPLES_IGNORES")
+			if ok {
+				re := regexp.MustCompile(val)
+				submatch := re.FindSubmatch([]byte(path))
+				if submatch != nil {
+					t.Logf("Skipping test %s", path)
+					return nil
+				}
+			}
+
 			examplePaths = append(examplePaths, path)
+			t.Logf("Adding test %s", path)
 			return nil
 		}
 		return nil
